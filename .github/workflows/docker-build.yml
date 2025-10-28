@@ -26,4 +26,4 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           push: true
-          tags: registry.cn-hangzhou.aliyuncs.com/myspace/myubuntu:latest
+          tags: crpi-gmih3z2dkjr1lre8.cn-hangzhou.personal.cr.aliyuncs.com/spenny/ubuntu:latest
