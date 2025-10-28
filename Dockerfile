@@ -24,11 +24,12 @@ ARG USER_PASS=san123
 ENV USER_NAME=${USER_NAME}
 ENV USER_PASS=${USER_PASS}
 
-# 如果用户不存在，则创建
+# 检查用户是否存在，如果不存在，则创建
 RUN id -u ${USER_NAME} &>/dev/null || \
-    useradd -ms /bin/bash ${USER_NAME} \
-    && echo "${USER_NAME}:${USER_PASS}" | chpasswd \
-    && usermod -aG sudo ${USER_NAME}
+    (echo "Creating user ${USER_NAME}..." && \
+     useradd -ms /bin/bash ${USER_NAME} && \
+     echo "${USER_NAME}:${USER_PASS}" | chpasswd && \
+     usermod -aG sudo ${USER_NAME})
 
 # 挂载目录
 VOLUME ["/home/${USER_NAME}"]
