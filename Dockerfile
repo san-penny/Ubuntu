@@ -42,8 +42,25 @@ WORKDIR /home/${USER_NAME}
 # 确保挂载目录权限
 RUN sudo chown -R ${USER_NAME}:${USER_NAME} /home/${USER_NAME} || true
 
+# 创建 boot 目录
+RUN mkdir -p /home/${USER_NAME}/boot
+
+# 自动生成 supervisord.conf（如果不存在就生成）
+RUN [ -f /home/${USER_NAME}/boot/supervisord.conf ] || \
+    echo "[supervisord]" > /home/${USER_NAME}/boot/supervisord.conf && \
+    echo "nodaemon=true" >> /home/${USER_NAME}/boot/supervisord.conf && \
+    echo "logfile=/home/${USER_NAME}/boot/supervisord.log" >> /home/${USER_NAME}/boot/supervisord.conf && \
+    echo "" >> /home/${USER_NAME}/boot/supervisord.conf && \
+    echo "[program:bash]" >> /home/${USER_NAME}/boot/supervisord.conf && \
+    echo "command=/bin/bash" >> /home/${USER_NAME}/boot/supervisord.conf && \
+    echo "autostart=true" >> /home/${USER_NAME}/boot/supervisord.conf && \
+    echo "autorestart=true" >> /home/${USER_NAME}/boot/supervisord.conf && \
+    echo "user=${USER_NAME}" >> /home/${USER_NAME}/boot/supervisord.conf && \
+    echo "stdout_logfile=/home/${USER_NAME}/boot/bash.log" >> /home/${USER_NAME}/boot/supervisord.conf && \
+    echo "stderr_logfile=/home/${USER_NAME}/boot/bash_err.log" >> /home/${USER_NAME}/boot/supervisord.conf
+
 # 通过环境变量传入 Supervisor 配置路径
 ENV SUPERVISOR_CONF=/home/${USER_NAME}/boot/supervisord.conf
 
-# 启动 Supervisor，读取环境变量 SUPERVISOR_CONF
+# 默认启动 Supervisor
 CMD ["/bin/bash", "-c", "/usr/bin/supervisord -c $SUPERVISOR_CONF"]
