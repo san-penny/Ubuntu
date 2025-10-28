@@ -24,10 +24,11 @@ ARG USER_PASS=san123
 ENV USER_NAME=${USER_NAME}
 ENV USER_PASS=${USER_PASS}
 
-# 创建用户
-RUN useradd -ms /bin/bash ${USER_NAME} \
- && echo "${USER_NAME}:${USER_PASS}" | chpasswd \
- && usermod -aG sudo ${USER_NAME}
+# 如果用户不存在，则创建
+RUN id -u ${USER_NAME} &>/dev/null || \
+    useradd -ms /bin/bash ${USER_NAME} \
+    && echo "${USER_NAME}:${USER_PASS}" | chpasswd \
+    && usermod -aG sudo ${USER_NAME}
 
 # 挂载目录
 VOLUME ["/home/${USER_NAME}"]
@@ -42,25 +43,20 @@ WORKDIR /home/${USER_NAME}
 # 确保挂载目录权限
 RUN sudo chown -R ${USER_NAME}:${USER_NAME} /home/${USER_NAME} || true
 
-# 创建 boot 目录
-RUN mkdir -p /home/${USER_NAME}/boot
-
-# 自动生成 supervisord.conf（如果不存在就生成）
-RUN [ -f /home/${USER_NAME}/boot/supervisord.conf ] || \
-    echo "[supervisord]" > /home/${USER_NAME}/boot/supervisord.conf && \
-    echo "nodaemon=true" >> /home/${USER_NAME}/boot/supervisord.conf && \
-    echo "logfile=/home/${USER_NAME}/boot/supervisord.log" >> /home/${USER_NAME}/boot/supervisord.conf && \
-    echo "" >> /home/${USER_NAME}/boot/supervisord.conf && \
-    echo "[program:bash]" >> /home/${USER_NAME}/boot/supervisord.conf && \
-    echo "command=/bin/bash" >> /home/${USER_NAME}/boot/supervisord.conf && \
-    echo "autostart=true" >> /home/${USER_NAME}/boot/supervisord.conf && \
-    echo "autorestart=true" >> /home/${USER_NAME}/boot/supervisord.conf && \
-    echo "user=${USER_NAME}" >> /home/${USER_NAME}/boot/supervisord.conf && \
-    echo "stdout_logfile=/home/${USER_NAME}/boot/bash.log" >> /home/${USER_NAME}/boot/supervisord.conf && \
-    echo "stderr_logfile=/home/${USER_NAME}/boot/bash_err.log" >> /home/${USER_NAME}/boot/supervisord.conf
-
-# 通过环境变量传入 Supervisor 配置路径
+# 默认 supervisord.conf 路径
 ENV SUPERVISOR_CONF=/home/${USER_NAME}/boot/supervisord.conf
 
-# 默认启动 Supervisor
-CMD ["/bin/bash", "-c", "/usr/bin/supervisord -c $SUPERVISOR_CONF"]
+# 启动逻辑：如果 supervisord.conf 不存在，则生成默认配置
+CMD ["/bin/bash", "-c", "if [ ! -f $SUPERVISOR_CONF ]; then \
+    echo '[supervisord]' > $SUPERVISOR_CONF && \
+    echo 'nodaemon=true' >> $SUPERVISOR_CONF && \
+    echo 'logfile=/home/${USER_NAME}/boot/supervisord.log' >> $SUPERVISOR_CONF && \
+    echo '' >> $SUPERVISOR_CONF && \
+    echo '[program:bash]' >> $SUPERVISOR_CONF && \
+    echo 'command=/bin/bash' >> $SUPERVISOR_CONF && \
+    echo 'autostart=true' >> $SUPERVISOR_CONF && \
+    echo 'autorestart=true' >> $SUPERVISOR_CONF && \
+    echo 'user=${USER_NAME}' >> $SUPERVISOR_CONF && \
+    echo 'stdout_logfile=/home/${USER_NAME}/boot/bash.log' >> $SUPERVISOR_CONF && \
+    echo 'stderr_logfile=/home/${USER_NAME}/boot/bash_err.log' >> $SUPERVISOR_CONF; \
+    fi && /usr/bin/supervisord -c $SUPERVISOR_CONF"]
