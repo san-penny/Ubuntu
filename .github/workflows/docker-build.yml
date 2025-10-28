@@ -2,7 +2,7 @@ name: Build and Push to Aliyun ACR
 
 on:
   push:
-    branches: [ "main" ]  # 每次 push 到 main 分支时自动执行
+    branches: [ "main" ]
 
 jobs:
   build:
@@ -18,7 +18,7 @@ jobs:
       - name: Log in to Aliyun ACR
         uses: docker/login-action@v3
         with:
-          registry: registry.cn-hangzhou.aliyuncs.com
+          registry: crpi-gmih3z2dkjr1lre8.cn-hangzhou.personal.cr.aliyuncs.com
           username: ${{ secrets.ALIYUN_USERNAME }}
           password: ${{ secrets.ALIYUN_PASSWORD }}
 
