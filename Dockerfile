@@ -35,8 +35,7 @@ RUN id -u ${USER_NAME} &>/dev/null || \
 USER root
 
 # 创建 boot 目录并设置权限
-RUN mkdir -p /home/${USER_NAME}/boot \
-    && chown -R ${USER_NAME}:${USER_NAME} /home/${USER_NAME}/boot
+RUN mkdir -p /home/${USER_NAME}/boot && chown -R ${USER_NAME}:${USER_NAME} /home/${USER_NAME}/boot
 
 # 默认 supervisord.conf 路径
 ENV SUPERVISOR_CONF=/home/${USER_NAME}/boot/supervisord.conf
