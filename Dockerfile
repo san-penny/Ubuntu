@@ -31,21 +31,12 @@ RUN id -u ${USER_NAME} &>/dev/null || \
      echo "${USER_NAME}:${USER_PASS}" | chpasswd && \
      usermod -aG sudo ${USER_NAME})
 
-# 挂载目录
-VOLUME ["/home/${USER_NAME}"]
-
-# 暴露 SSH 端口
-EXPOSE 22
-
-# 切换默认用户
+# 切换回 root，确保可以创建配置文件
 USER root
 
-# 确保挂载目录权限
-RUN chown -R ${USER_NAME}:${USER_NAME} /home/${USER_NAME} || true
-
-# 切换回普通用户
-USER ${USER_NAME}
-WORKDIR /home/${USER_NAME}
+# 创建 boot 目录并设置权限
+RUN mkdir -p /home/${USER_NAME}/boot \
+    && chown -R ${USER_NAME}:${USER_NAME} /home/${USER_NAME}/boot
 
 # 默认 supervisord.conf 路径
 ENV SUPERVISOR_CONF=/home/${USER_NAME}/boot/supervisord.conf
@@ -65,5 +56,12 @@ RUN if [ ! -f $SUPERVISOR_CONF ]; then \
         echo 'stderr_logfile=/home/${USER_NAME}/boot/bash_err.log' >> $SUPERVISOR_CONF; \
     fi
 
+# 切换为普通用户执行
+USER ${USER_NAME}
+WORKDIR /home/${USER_NAME}
+
+# 暴露 SSH 端口
+EXPOSE 22
+
 # 默认启动 Supervisor
-CMD ["/bin/bash", "-c", "/usr/bin/supervisord -c ${SUPERVISOR_CONF}"]
+CMD ["/usr/bin/supervisord", "-c", "/home/san/boot/supervisord.conf"]
