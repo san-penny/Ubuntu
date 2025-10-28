@@ -24,7 +24,7 @@ ARG USER_PASS=san123
 ENV USER_NAME=${USER_NAME}
 ENV USER_PASS=${USER_PASS}
 
-# 创建用户
+# 创建用户（如果用户不存在）
 RUN id -u ${USER_NAME} &>/dev/null || \
     (echo "Creating user ${USER_NAME}..." && \
      useradd -ms /bin/bash ${USER_NAME} && \
