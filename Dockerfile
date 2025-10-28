@@ -37,12 +37,15 @@ VOLUME ["/home/${USER_NAME}"]
 # 暴露 SSH 端口
 EXPOSE 22
 
-# 切换默认用户
-USER ${USER_NAME}
-WORKDIR /home/${USER_NAME}
+# 以 root 用户创建文件和设置权限
+USER root
 
 # 确保挂载目录权限
-RUN sudo chown -R ${USER_NAME}:${USER_NAME} /home/${USER_NAME} || true
+RUN chown -R ${USER_NAME}:${USER_NAME} /home/${USER_NAME} || true
+
+# 切换默认用户为 ${USER_NAME}
+USER ${USER_NAME}
+WORKDIR /home/${USER_NAME}
 
 # 默认 supervisord.conf 路径
 ENV SUPERVISOR_CONF=/home/${USER_NAME}/boot/supervisord.conf
