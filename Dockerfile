@@ -25,11 +25,8 @@ RUN export DEBIAN_FRONTEND=noninteractive; \
 # 暴露22端口
 EXPOSE 22
 
-# 配置 supervisord 和 sshd 启动命令
-COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-
 # 使用 entrypoint.sh 启动容器
 ENTRYPOINT ["/entrypoint.sh"]
 
 # 默认命令是启动 supervisord 和 sshd
-CMD ["supervisord", "-c", "/etc/supervisor/supervisord.conf"]
+CMD ["supervisord", "-c", "/home/san/boot/supervisord.conf"]
