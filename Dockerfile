@@ -5,12 +5,12 @@ FROM ubuntu:24.04
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Asia/Shanghai
 
-# 安装工具和 Supervisor
-RUN apt-get update \
- && apt-get -y upgrade \
- && apt-get -y dist-upgrade \
- && apt-get install -y --no-install-recommends \
-    curl vim git htop sudo wget unzip python3 python3-pip supervisor openssh-server \
+# 更改APT源为阿里云镜像源（如果在中国大陆）
+RUN sed -i 's|http://archive.ubuntu.com/ubuntu/|http://mirrors.aliyun.com/ubuntu/|g' /etc/apt/sources.list
+
+# 更新APT包列表并安装工具和 Supervisor
+RUN apt-get clean && apt-get update && apt-get install -y --no-install-recommends \
+    curl vim supervisor openssh-server \
  && apt-get autoremove -y \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
@@ -37,13 +37,13 @@ VOLUME ["/home/${USER_NAME}"]
 # 暴露 SSH 端口
 EXPOSE 22
 
-# 以 root 用户创建文件和设置权限
+# 切换默认用户
 USER root
 
 # 确保挂载目录权限
 RUN chown -R ${USER_NAME}:${USER_NAME} /home/${USER_NAME} || true
 
-# 切换默认用户为 ${USER_NAME}
+# 切换回普通用户
 USER ${USER_NAME}
 WORKDIR /home/${USER_NAME}
 
@@ -51,16 +51,19 @@ WORKDIR /home/${USER_NAME}
 ENV SUPERVISOR_CONF=/home/${USER_NAME}/boot/supervisord.conf
 
 # 启动逻辑：如果 supervisord.conf 不存在，则生成默认配置
-CMD ["/bin/bash", "-c", "if [ ! -f $SUPERVISOR_CONF ]; then \
-    echo '[supervisord]' > $SUPERVISOR_CONF && \
-    echo 'nodaemon=true' >> $SUPERVISOR_CONF && \
-    echo 'logfile=/home/${USER_NAME}/boot/supervisord.log' >> $SUPERVISOR_CONF && \
-    echo '' >> $SUPERVISOR_CONF && \
-    echo '[program:bash]' >> $SUPERVISOR_CONF && \
-    echo 'command=/bin/bash' >> $SUPERVISOR_CONF && \
-    echo 'autostart=true' >> $SUPERVISOR_CONF && \
-    echo 'autorestart=true' >> $SUPERVISOR_CONF && \
-    echo 'user=${USER_NAME}' >> $SUPERVISOR_CONF && \
-    echo 'stdout_logfile=/home/${USER_NAME}/boot/bash.log' >> $SUPERVISOR_CONF && \
-    echo 'stderr_logfile=/home/${USER_NAME}/boot/bash_err.log' >> $SUPERVISOR_CONF; \
-    fi && /usr/bin/supervisord -c $SUPERVISOR_CONF"]
+RUN if [ ! -f $SUPERVISOR_CONF ]; then \
+        echo '[supervisord]' > $SUPERVISOR_CONF && \
+        echo 'nodaemon=true' >> $SUPERVISOR_CONF && \
+        echo 'logfile=/home/${USER_NAME}/boot/supervisord.log' >> $SUPERVISOR_CONF && \
+        echo '' >> $SUPERVISOR_CONF && \
+        echo '[program:bash]' >> $SUPERVISOR_CONF && \
+        echo 'command=/bin/bash' >> $SUPERVISOR_CONF && \
+        echo 'autostart=true' >> $SUPERVISOR_CONF && \
+        echo 'autorestart=true' >> $SUPERVISOR_CONF && \
+        echo 'user=${USER_NAME}' >> $SUPERVISOR_CONF && \
+        echo 'stdout_logfile=/home/${USER_NAME}/boot/bash.log' >> $SUPERVISOR_CONF && \
+        echo 'stderr_logfile=/home/${USER_NAME}/boot/bash_err.log' >> $SUPERVISOR_CONF; \
+    fi
+
+# 默认启动 Supervisor
+CMD ["/bin/bash", "-c", "/usr/bin/supervisord -c ${SUPERVISOR_CONF}"]
